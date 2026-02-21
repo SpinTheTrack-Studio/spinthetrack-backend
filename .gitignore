@@ -1,0 +1,48 @@
+# --- PYTHON ---
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environnements virtuels
+.venv/
+venv/
+ENV/
+env/
+
+# Distributions / Packages
+dist/
+build/
+*.egg-info/
+
+# --- FASTAPI / DATA ---
+# Dossier de données de ton jeu (pour éviter de push les .json de session)
+data/game/*.json
+# Si ton dossier s'appelle différemment, adapte ici :
+game/data/*.json
+
+# Fichiers de configuration sensibles
+.env
+
+# --- TESTS & QUALITÉ ---
+# Utilisé dans lrclibapi
+.tox/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# --- ÉDITEURS ---
+# Dossiers VS Code présents dans ton repo
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- DIVERS ---
+.DS_Store
+*.log
+
+app/data/sessions/*
+app/data/games/*
