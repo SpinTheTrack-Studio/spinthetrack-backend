@@ -1,19 +1,10 @@
 import binascii
 import hashlib
 import random
-import re
-import time
 from typing import Optional, Tuple, Dict, Any
-from urllib.parse import quote
-
-import httpx
-from curl_cffi import requests as curl_requests
 import requests
 import urllib3
 from Crypto.Cipher import AES
-from requests.adapters import HTTPAdapter
-from urllib3 import Retry
-from urllib3.util.ssl_ import create_urllib3_context
 
 # --- CONFIGURATION ---
 BLOWFISH_SECRET = "g4el58wc0zvf9na1"
