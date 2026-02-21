@@ -2,7 +2,7 @@
 FROM python:3.11-slim
 
 # 2. Définition du répertoire de travail
-WORKDIR /app
+WORKDIR /
 
 # 3. Installation des dépendances système nécessaires (si tu utilises curl_cffi ou des outils de build)
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -21,11 +21,12 @@ RUN mkdir -p /app/data/games
 RUN mkdir -p /app/data/sessions
 
 # 7. Copie de l'intégralité du code source
-COPY . .
+COPY . /backend
 
 # 8. Exposition du port utilisé par FastAPI (par défaut 8000)
 EXPOSE 8000
 
+ENV PYTHONPATH=/backend
 # 9. Commande de lancement avec Uvicorn
 # On utilise 0.0.0.0 pour que le container soit accessible depuis le proxy Nginx
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
