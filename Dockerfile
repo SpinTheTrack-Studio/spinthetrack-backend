@@ -28,4 +28,4 @@ EXPOSE 8000
 
 # 9. Commande de lancement avec Uvicorn
 # On utilise 0.0.0.0 pour que le container soit accessible depuis le proxy Nginx
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app/main:app", "--host", "0.0.0.0", "--port", "8000"]
