@@ -26,6 +26,8 @@ COPY . /backend
 # 8. Exposition du port utilisé par FastAPI (par défaut 8000)
 EXPOSE 8000
 
+WORKDIR /backend
+
 ENV PYTHONPATH=/backend
 # 9. Commande de lancement avec Uvicorn
 # On utilise 0.0.0.0 pour que le container soit accessible depuis le proxy Nginx
