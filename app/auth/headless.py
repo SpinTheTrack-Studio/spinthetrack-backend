@@ -65,22 +65,25 @@ async def get_arl_with_playwright(email, password):
             # Clic via data-testid
             await page.get_by_test_id("login-button").click()
 
-            # --- 4. ATTENTE DE RÉUSSITE (CORRIGÉE) ---
+            # --- 4. ATTENTE DE RÉUSSITE ---
             print("5. Attente de la connexion...")
+            print(">>> Vérification du Captcha en cours (30 sec max)... <<<")
 
-            # AU LIEU D'ATTENDRE LE COOKIE EN JS (qui est invisible),
-            # ON ATTEND QUE L'URL NE CONTIENNE PLUS "LOGIN".
-            # Cela signifie que Deezer nous a redirigé vers l'accueil ou les channels.
-            # Timeout à 0 (infini) pour te laisser le temps de faire le Captcha si besoin.
+            try:
+                # On met un timeout de 30 secondes (30000 ms) au lieu de 0
+                await page.wait_for_function(
+                    "() => !window.location.href.includes('login') && !window.location.href.includes('account')",
+                    timeout=30000
+                )
+                print("✅ URL changée ! Nous avons quitté la page de login.")
 
-            print(">>> Si un Captcha apparaît, résolvez-le manuellement dans la fenêtre <<<")
-
-            await page.wait_for_function(
-                "() => !window.location.href.includes('login') && !window.location.href.includes('account')",
-                timeout=0
-            )
-
-            print("✅ URL changée ! Nous avons quitté la page de login.")
+            except Exception as e:
+                # Si le délai est dépassé, on prend une photo !
+                print("❌ Délai dépassé ou bloqué par Deezer !")
+                screenshot_path = "/app/data/sessions/debug_deezer.png"
+                await page.screenshot(path=screenshot_path)
+                print(f"📸 Capture d'écran de l'erreur sauvegardée ici : {screenshot_path}")
+                return None
 
             # --- 5. EXTRACTION DU COOKIE PAR PYTHON ---
             # Python a accès aux cookies HttpOnly via context.cookies()
