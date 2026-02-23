@@ -7,14 +7,15 @@ async def get_arl_with_playwright(email, password):
     async with async_playwright() as p:
         # Lancement du navigateur
         browser = await p.chromium.launch(
-            headless=True,
+            headless=True,  # Toujours True en Docker
             args=[
                 "--no-sandbox",
                 "--disable-setuid-sandbox",
-                "--disable-blink-features=AutomationControlled"
+                "--disable-dev-shm-usage",  # Demande à Chrome d'utiliser /tmp au lieu de /dev/shm
+                "--disable-blink-features=AutomationControlled",
+                "--disable-gpu"
             ]
         )
-
         context = await browser.new_context(
             viewport={'width': 1920, 'height': 1080},
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
