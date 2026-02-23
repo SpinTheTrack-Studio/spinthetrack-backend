@@ -2,7 +2,7 @@ import json
 import os
 from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
-from app.auth.headless import get_arl_with_playwright
+from app.auth.services import get_arl_from_api
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -34,7 +34,7 @@ async def login_headless(
     print(f"Tentative de connexion pour la session : {x_game_id}")
 
     # 1. Appel à Playwright (Headless)
-    arl = await get_arl_with_playwright(data.email, data.password)
+    arl = await get_arl_from_api(data.email, data.password)
 
     if not arl:
         raise HTTPException(status_code=401, detail="Échec de l'authentification Deezer")

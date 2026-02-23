@@ -3,8 +3,6 @@ uvicorn[standard]~=0.40.0
 requests~=2.32.5
 python-dotenv
 pydantic~=2.12.5
-playwright
-playwright-stealth
 pycryptodome~=3.23.0
 httpx~=0.28.1
 urllib3~=2.6.3

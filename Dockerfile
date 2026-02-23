@@ -13,12 +13,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 4. Installation de Playwright ET de ses dépendances système
-# Cette commande installe automatiquement toutes les libs (libnss3, libgbm1, etc.)
-RUN pip install playwright && \
-    playwright install chromium && \
-    playwright install-deps chromium
-
 # 5. Création des dossiers data
 RUN mkdir -p /app/data/games /app/data/sessions
 
