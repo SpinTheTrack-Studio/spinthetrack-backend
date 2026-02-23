@@ -7,11 +7,11 @@ async def get_arl_with_playwright(email, password):
     async with async_playwright() as p:
         # Lancement du navigateur
         browser = await p.chromium.launch(
-            headless=False,  # On laisse visible pour voir ce qu'il se passe
+            headless=True,
             args=[
-                "--start-maximized",
-                "--disable-blink-features=AutomationControlled",
-                "--no-sandbox"
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-blink-features=AutomationControlled"
             ]
         )
 

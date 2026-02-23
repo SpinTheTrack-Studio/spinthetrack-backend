@@ -6,8 +6,27 @@ WORKDIR /
 
 # 3. Installation des dépendances système nécessaires (si tu utilises curl_cffi ou des outils de build)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
+    libnss3 \
+    libnspr4 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    librandr2 \
+    libgbm1 \
+    libasound2 \
+    libpangocairo-1.0-0 \
+    libpango-1.0-0 \
     && rm -rf /var/lib/apt/lists/*
+
+# 2. Installer Chromium via Playwright
+RUN playwright install chromium
+RUN playwright install-deps chromium
 
 # 4. Copie des fichiers de dépendances en premier (optimisation du cache Docker)
 COPY requirements.txt .
