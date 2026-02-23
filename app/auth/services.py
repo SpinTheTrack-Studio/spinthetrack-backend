@@ -1,61 +1,88 @@
 import hashlib
-
-import httpx  # Plus rapide et asynchrone, idéal pour FastAPI
+import json
+import base64
+from curl_cffi.requests import AsyncSession
 
 
 async def get_arl_from_api(email: str, password: str) -> str:
-    # 1. Les clés secrètes extraites de Deemix/Refreezer
-    client_id = "172365"
-    client_secret = "fb0bec7ccc063dab0417eb7b0d847f34"
+    # 1. Décryptage des clés Saturne (447462 / a83bf7f...cf)
+    client_id = base64.b64decode("NDQ3NDYy").decode('utf-8')
+    client_secret = base64.b64decode("YTgzYmY3ZjM4YWQyZjEzN2U0NDQ3MjdjZmMzNzc1Y2Y=").decode('utf-8')
 
-    # 2. Le hachage cryptographique
+    # 2. Cryptographie MD5 conforme au script
     hashed_pwd = hashlib.md5(password.encode('utf-8')).hexdigest()
     raw_hash = f"{client_id}{email}{hashed_pwd}{client_secret}"
     hash_param = hashlib.md5(raw_hash.encode('utf-8')).hexdigest()
 
-    # On utilise un client HTTP qui garde les cookies en mémoire (CookieJar)
-    async with httpx.AsyncClient(headers={
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/121.0.0.0 Safari/537.36"}) as client:
+    # 3. Headers imitant parfaitement le script
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36",
+        "X-User-IP": "1.1.1.1",
+        "x-deezer-client-ip": "1.1.1.1",
+        "Accept": "*/*",
+        "Accept-Language": "fr-FR,fr;q=0.9",
+        "Cache-Control": "max-age=0",
+    }
 
-        # 3. Obtenir le Access Token
-        auth_url = "https://api.deezer.com/auth/token"
-        params = {
-            "app_id": client_id,
-            "login": email,
-            "password": hashed_pwd,
-            "hash": hash_param
-        }
-
+    # On utilise curl_cffi pour simuler l'empreinte TLS d'un navigateur
+    async with AsyncSession(impersonate="chrome110", headers=headers) as client:
         try:
-            auth_res = await client.get(auth_url, params=params)
-            auth_data = auth_res.json()
-            access_token = auth_data.get("access_token")
+            # --- ÉTAPE 1 : RÉCUPÉRER LES COOKIES INITIAUX (sid) ---
+            # Le script fait un GET sur getUserData AVANT le login
+            print("1. Initialisation des cookies (getUserData)...")
+            init_url = "https://www.deezer.com/ajax/gw-light.php?method=deezer.getUserData&input=3&api_version=1.0&api_token=null"
+            await client.get(init_url)
 
-            if not access_token:
-                print(f"❌ Échec de l'authentification API : {auth_data}")
+            # --- ÉTAPE 2 : OBTENIR LE TOKEN (Le login OAuth) ---
+            # Le script utilise connect.deezer.com avec les paramètres dans l'URL (GET)
+            print("2. Tentative de login (OAuth)...")
+            auth_url = "https://connect.deezer.com/oauth/user_auth.php"
+            params = {
+                "app_id": client_id,
+                "login": email,
+                "password": hashed_pwd,
+                "hash": hash_param
+            }
+
+            # On passe les cookies obtenus à l'étape 1
+            res_auth = await client.get(auth_url, params=params)
+
+            if res_auth.status_code != 200:
+                print(f"❌ Erreur HTTP {res_auth.status_code}")
                 return None
 
-            print("✅ Token obtenu, initialisation de la session...")
+            try:
+                auth_data = res_auth.json()
+            except:
+                print(f"❌ Réponse non JSON : {res_auth.text[:100]}")
+                return None
 
-            # 4. Initialiser la session en simulant une action (comme le fait Deemix)
-            # Cette étape est cruciale pour que Deezer nous donne un cookie de session (sid)
-            track_url = "https://api.deezer.com/platform/generic/track/3135556"
-            await client.get(track_url, headers={"Authorization": f"Bearer {access_token}"})
+            if "access_token" not in auth_data:
+                print(f"❌ Échec Login : {auth_data}")
+                return None
 
-            # 5. Interroger la Gateway pour obtenir l'ARL
+            print("✅ Token obtenu !")
+
+            # --- ÉTAPE 3 : RÉCUPÉRATION DE L'ARL (Gateway) ---
+            print("3. Extraction de l'ARL...")
+            # Une fois loggé, les cookies du client contiennent la session authentifiée
             gw_url = "https://www.deezer.com/ajax/gw-light.php?method=user.getArl&input=3&api_version=1.0&api_token=null"
-            gw_res = await client.get(gw_url)
-            gw_data = gw_res.json()
+            res_gw = await client.get(gw_url)
+            gw_data = res_gw.json()
 
             arl = gw_data.get("results")
 
             if arl:
-                print(f"*** SUCCÈS ! ARL RÉCUPÉRÉ VIA API : {arl[:15]}... ***")
+                print(f"*** 🎉 VICTOIRE SATURNE ! ARL : {arl[:15]}... ***")
                 return arl
-            else:
-                print("❌ Impossible d'extraire l'ARL de la Gateway.")
-                return None
+
+            # Vérification ultime dans les cookies
+            if 'arl' in client.cookies:
+                return client.cookies['arl']
+
+            print(f"❌ ARL non trouvé : {gw_data}")
+            return None
 
         except Exception as e:
-            print(f"--- ERREUR API : {e} ---")
+            print(f"--- ERREUR : {e} ---")
             return None
