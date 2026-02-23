@@ -1,94 +1,61 @@
-import asyncio
-import random
-from playwright.async_api import async_playwright
+import hashlib
 
-from playwright_stealth import Stealth
+import httpx  # Plus rapide et asynchrone, idéal pour FastAPI
 
 
-async def get_arl_with_playwright(email, password):
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(
-            headless=True,
-            args=[
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-                "--disable-dev-shm-usage",
-                "--disable-blink-features=AutomationControlled",
-                "--disable-gpu"
-            ]
-        )
+async def get_arl_from_api(email: str, password: str) -> str:
+    # 1. Les clés secrètes extraites de Deemix/Refreezer
+    client_id = "172365"
+    client_secret = "fb0bec7ccc063dab0417eb7b0d847f34"
 
-        context = await browser.new_context(
-            viewport={'width': 1920, 'height': 1080},
-            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
-        )
+    # 2. Le hachage cryptographique
+    hashed_pwd = hashlib.md5(password.encode('utf-8')).hexdigest()
+    raw_hash = f"{client_id}{email}{hashed_pwd}{client_secret}"
+    hash_param = hashlib.md5(raw_hash.encode('utf-8')).hexdigest()
 
-        page = await context.new_page()
+    # On utilise un client HTTP qui garde les cookies en mémoire (CookieJar)
+    async with httpx.AsyncClient(headers={
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/121.0.0.0 Safari/537.36"}) as client:
 
-        # --- 1. APPLICATION DU MODE STEALTH (NOUVELLE API) ---
-        # On crée une instance de Stealth et on l'applique à la page de manière asynchrone
-        await Stealth().apply_stealth_async(page)
+        # 3. Obtenir le Access Token
+        auth_url = "https://api.deezer.com/auth/token"
+        params = {
+            "app_id": client_id,
+            "login": email,
+            "password": hashed_pwd,
+            "hash": hash_param
+        }
 
         try:
-            print("1. Navigation vers Deezer...")
-            await page.goto("https://www.deezer.com/fr/login", wait_until="domcontentloaded", timeout=60000)
+            auth_res = await client.get(auth_url, params=params)
+            auth_data = auth_res.json()
+            access_token = auth_data.get("access_token")
 
-            print("2. Gestion Bannière...")
-            await asyncio.sleep(2)
-
-            try:
-                cookie_btn = page.locator("#gdpr-btn-accept-all")
-                if await cookie_btn.is_visible(timeout=3000):
-                    print("   -> Clic sur Accepter les cookies.")
-                    await cookie_btn.click()
-                    await asyncio.sleep(1)
-            except Exception as e:
-                print(f"   -> Pas de bannière ou erreur: {e}")
-
-            print("3. Remplissage (Mode Humain)...")
-            await page.wait_for_selector("input#email", state="visible")
-
-            await page.type("input#email", email, delay=random.randint(50, 150))
-            await asyncio.sleep(0.5)
-            await page.type("input#password", password, delay=random.randint(50, 150))
-
-            await asyncio.sleep(1)
-
-            print("4. Validation...")
-            await page.get_by_test_id("login-button").click()
-
-            print("5. Attente de la connexion...")
-            print(">>> Vérification du Captcha en cours (30 sec max)... <<<")
-
-            try:
-                await page.wait_for_function(
-                    "() => !window.location.href.includes('login') && !window.location.href.includes('account')",
-                    timeout=30000
-                )
-                print("✅ URL changée ! Nous avons quitté la page de login.")
-
-            except Exception as e:
-                print("❌ Délai dépassé ou bloqué par Deezer !")
-                screenshot_path = "/app/data/sessions/debug_deezer_stealth.png"
-                await page.screenshot(path=screenshot_path)
-                print(f"📸 Capture d'écran de l'erreur sauvegardée ici : {screenshot_path}")
+            if not access_token:
+                print(f"❌ Échec de l'authentification API : {auth_data}")
                 return None
 
-            await asyncio.sleep(2)
+            print("✅ Token obtenu, initialisation de la session...")
 
-            all_cookies = await context.cookies()
-            arl_cookie = next((c['value'] for c in all_cookies if c['name'] == 'arl'), None)
+            # 4. Initialiser la session en simulant une action (comme le fait Deemix)
+            # Cette étape est cruciale pour que Deezer nous donne un cookie de session (sid)
+            track_url = "https://api.deezer.com/platform/generic/track/3135556"
+            await client.get(track_url, headers={"Authorization": f"Bearer {access_token}"})
 
-            if arl_cookie:
-                print(f"*** SUCCÈS ! ARL RÉCUPÉRÉ : {arl_cookie[:15]}... ***")
-                return arl_cookie
+            # 5. Interroger la Gateway pour obtenir l'ARL
+            gw_url = "https://www.deezer.com/ajax/gw-light.php?method=user.getArl&input=3&api_version=1.0&api_token=null"
+            gw_res = await client.get(gw_url)
+            gw_data = gw_res.json()
+
+            arl = gw_data.get("results")
+
+            if arl:
+                print(f"*** SUCCÈS ! ARL RÉCUPÉRÉ VIA API : {arl[:15]}... ***")
+                return arl
             else:
-                print("❌ ÉCHEC : URL changée mais pas de cookie 'arl' trouvé.")
+                print("❌ Impossible d'extraire l'ARL de la Gateway.")
                 return None
 
         except Exception as e:
-            print(f"--- ERREUR : {e} ---")
+            print(f"--- ERREUR API : {e} ---")
             return None
-
-        finally:
-            await browser.close()
