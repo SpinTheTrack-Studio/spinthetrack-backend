@@ -133,7 +133,7 @@ async def end_game(x_game_id: str = Header(..., alias="X-Game-ID")):
     """
     Termine la partie et supprime le fichier d'état JSON associé pour libérer de la place.
     """
-    dir_path = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
+    dir_path = os.path.abspath(os.path.dirname(__file__))
     file_path = os.path.join(dir_path, "..", "data", "games", f"{x_game_id}.json")
 
     try:
