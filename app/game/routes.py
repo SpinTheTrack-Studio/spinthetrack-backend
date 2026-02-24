@@ -133,14 +133,9 @@ async def end_game(x_game_id: str = Header(..., alias="X-Game-ID")):
     """
     Termine la partie et supprime le fichier d'état JSON associé pour libérer de la place.
     """
-    dir_path = os.path.abspath(os.path.dirname(__file__))
-    file_path = os.path.join(dir_path, "..", "data", "games", f"{x_game_id}.json")
+    file_path = os.path.join("data", "games", f"{x_game_id}.json")
 
     try:
-        print(f"le path qui marche pas: {__file__}", flush=True)
-        print(f"le path qui marche pas: {os.path.dirname(__file__)}", flush=True)
-        print(f"le path qui marche pas: {dir_path}", flush=True)
-        print(f"le path qui marche pas: {file_path}", flush=True)
         if os.path.exists(file_path):
             os.remove(file_path)
             return {
