@@ -1,6 +1,7 @@
-from pydantic import BaseModel
-from typing import List, Optional, Dict, Any, Union
 from enum import Enum
+from typing import List, Optional, Dict, Any
+
+from pydantic import BaseModel
 
 
 class GameStatus(str, Enum):
@@ -15,8 +16,8 @@ class GameStatus(str, Enum):
 class GameMode(str, Enum):
     CLASSIC = "CLASSIC"  # Blind Test
     MAESTRO = "MAESTRO"  # Paroles
-    TWISTED = "TWISTED"  # Vitesse (si implémenté côté front)
-    HUMMER = "HUMMER"  # Fredonneur
+    TWISTED = "TWISTED"  # Vitesse
+    LAST_WORD = "LAST_WORD"  # Le Mot de la Fin
 
 
 class Player(BaseModel):
@@ -31,10 +32,12 @@ class ChallengeData(BaseModel):
     track_title: str
     track_artist: str
     track_cover: str
+
     # Infos jeu
     question: str
     answer: str
     stream_url: str
+
     # Données spécifiques
     lyrics_challenge: Optional[Dict[str, Any]] = None
     playback_speed: float = 1.0
@@ -45,12 +48,9 @@ class GameState(BaseModel):
     status: GameStatus = GameStatus.LOBBY
     players: List[Player] = []
     current_player_index: int = 0
-
     current_round: int = 0
-
     deck: List[Dict[str, Any]] = []
     used_tracks: List[str] = []
-
     current_challenge: Optional[ChallengeData] = None
 
 

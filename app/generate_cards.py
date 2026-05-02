@@ -1,8 +1,12 @@
-import requests
 import json
-import random
-import time
+import os
 import sys
+import time
+
+import requests
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class DeezerCardGenerator:
@@ -192,7 +196,7 @@ def main():
     print("=== DEEZER CARD GENERATOR (VERSION ROBUSTE) ===")
 
     # 1. Saisie ARL
-    arl = "36a784978fd623bf4c2dc4cddc0784220bfd04a445f5ce165f016c4499bc9144ef8330e8fb8c922483c8987c772551dcf5e7122b6028f6d5e00c4901ba2f41905c665ae8a793ed5da7cd3a0d1225e0d47c132e427e2d2c3bb72836d98cf387e7"
+    arl = os.environ.get("ARL")
     if not arl:
         print("ARL vide, abandon.")
         return
@@ -200,7 +204,7 @@ def main():
     # 2. Saisie Playlists
     print("\nEntrez les IDs des playlists (séparés par des virgules)")
     print("Exemple: 123456789, 987654321")
-    pl_input = "12232544271, 12232540071, 713806955, 6153956244, 13390026243, 3809722162, 14136311941"
+    pl_input = "12232544271, 12232540071, 713806955, 6153956244, 13390026243, 3809722162, 14136311941, 9456952822, 3631248842, 4543271164"
     if not pl_input: return
     playlist_ids = [pid.strip() for pid in pl_input.split(',') if pid.strip()]
 
